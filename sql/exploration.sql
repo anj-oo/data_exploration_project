@@ -99,3 +99,134 @@ SELECT
     COUNT(DISTINCT customer_key) AS total_customer_ordered
 FROM
     gold.fact_sales;
+
+-- --------------------- MAGNITUDE EXPLORATION --------------------------------------------
+-- Total customers by countries
+SELECT
+    country,
+    COUNT(customer_key) total_customer
+FROM
+    gold.dim_customers
+GROUP BY
+    country
+ORDER BY
+    total_customer DESC;
+
+-- Total customers by gender
+SELECT
+    gender,
+    COUNT(customer_key) total_customer
+FROM
+    gold.dim_customers
+GROUP BY
+    gender
+ORDER BY
+    total_customer DESC;
+
+-- Total products by categories
+SELECT
+    category,
+    COUNT(product_id) total_product
+FROM
+    gold.dim_products
+GROUP BY
+    category
+ORDER BY
+    total_product DESC;
+
+-- Averge cost in each categories
+SELECT
+    category,
+    AVG(cost) avergae_cost
+FROM
+    gold.dim_products
+GROUP BY
+    category
+ORDER BY
+    avergae_cost DESC;
+
+-- Total revenue geneated for each categories
+SELECT
+    p.category,
+    SUM(s.sales_amount) total_revenue
+FROM
+    gold.fact_sales s
+    LEFT JOIN gold.dim_products p ON p.product_key = s.product_key
+GROUP BY
+    p.category
+ORDER BY
+    total_revenue DESC;
+
+-- Total revenue genearted by each customers
+SELECT
+    d.customer_key,
+    d.first_name,
+    d.last_name,
+    SUM(f.sales_amount) total_revenue
+FROM
+    gold.fact_sales f
+    LEFT JOIN gold.dim_customers d ON d.customer_key = f.customer_key
+GROUP BY
+    d.customer_key,
+    d.first_name,
+    d.last_name
+ORDER BY
+    total_revenue DESC;
+
+-- Distribution of items sold across countries
+SELECT
+    c.country,
+    SUM(sales_amount) total_sales
+FROM
+    gold.fact_sales f
+    LEFT JOIN gold.dim_customers c ON c.customer_key = f.customer_key
+GROUP BY
+    c.country
+ORDER BY
+    total_sales DESC;
+
+-- --------------------- RANKING --------------------------------------------
+-- Top 5 product that generates highest revenue
+SELECT
+    TOP 5 p.product_name,
+    SUM(s.sales_amount) total_revenue
+FROM
+    gold.fact_sales s
+    LEFT JOIN gold.dim_products p ON p.product_key = s.product_key
+GROUP BY
+    p.product_name
+ORDER BY
+    total_revenue DESC;
+
+-- Bottom 5 product that generates worest revenue
+SELECT
+    TOP 5 p.product_name,
+    SUM(s.sales_amount) total_revenue
+FROM
+    gold.fact_sales s
+    LEFT JOIN gold.dim_products p ON p.product_key = s.product_key
+GROUP BY
+    p.product_name
+ORDER BY
+    total_revenue ASC;
+
+-- Top 5 product that generate highest revenue uisng window function 
+SELECT
+    *
+FROM
+    (
+        SELECT
+            p.product_name,
+            SUM(s.sales_amount) total_revenue,
+            ROW_NUMBER() OVER(
+                ORDER BY
+                    SUM(s.sales_amount) DESC
+            ) rank_product
+        FROM
+            gold.fact_sales s
+            LEFT JOIN gold.dim_products p ON p.product_key = s.product_key
+        GROUP BY
+            p.product_name
+    ) t
+WHERE
+    rank_product <= 5;
