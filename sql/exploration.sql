@@ -230,3 +230,42 @@ FROM
     ) t
 WHERE
     rank_product <= 5;
+
+-- Find top customers who generated highest revenue
+SELECT 
+TOP 5  
+ customer_name,
+ total_revenue
+FROM 
+(
+SELECT
+    d.customer_key,
+    d.first_name AS customer_name,
+    SUM(f.sales_amount) total_revenue,
+    Rank() OVER(ORDER BY SUM(f.sales_amount) DESC) AS rnk
+FROM
+    gold.fact_sales f
+    LEFT JOIN gold.dim_customers d ON d.customer_key = f.customer_key
+GROUP BY
+    d.customer_key,
+    d.first_name
+) t ORDER BY
+    rnk ASC
+
+-- Lowest 3 customer
+
+
+WITH ranked_customers AS (
+SELECT
+    d.customer_key,
+    d.first_name AS customer_name,
+    SUM(f.sales_amount) total_revenue,
+    Rank() OVER(ORDER BY SUM(f.sales_amount) ASC) AS rnk
+FROM
+    gold.fact_sales f
+    LEFT JOIN gold.dim_customers d ON d.customer_key = f.customer_key
+GROUP BY
+    d.customer_key,
+    d.first_name
+)
+SELECT * FROM ranked_customers where rnk <=3 ORDER BY total_revenue ASC;
